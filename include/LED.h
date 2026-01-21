@@ -12,5 +12,5 @@ public:
     inline void Set() { IO_Set(LED_PORT, _mask); }
     inline void Clear() { IO_Clear(LED_PORT, _mask); }
     inline void Toggle() { IO_Toggle(LED_PORT, _mask); }
-    inline void Set_Mask(uint8_t mask) { _mask = mask; }
+    inline void SetMask(uint8_t mask) { _mask = mask; }
 };

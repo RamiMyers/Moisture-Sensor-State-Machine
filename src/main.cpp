@@ -2,25 +2,29 @@
 #include <LED.h>
 #include <MoistureSensor.h>
 
-#define BLINK_FREQUENCY 1000
-#define NUM_LEDs 3
+#define CYCLE_FREQUENCY 1000 // 1 Hz
+#define DRY_THRESHOLD 300
+
+enum State { IDLE, CHECK, WATERING };
 
 volatile uint16_t ticks = 0;
 
-uint8_t ledToggle = 0;
-uint16_t ledTimer = 0;
-uint8_t leds[] = { RED_LED_MASK, GREEN_LED_MASK, BLUE_LED_MASK };
+uint16_t cycleTimer = 0;
+uint16_t moistureValue;
+uint8_t currentLED = RED_LED_MASK;
 
-LED ledHandler(RED_LED_MASK);
+LED ledHandler(currentLED);
 
-ISR(TIMER0_COMPA_vect) {
-  ticks++;
-}
+State state = IDLE;
+
+void onTimerTick() { ticks++; }
 
 void setup() {
   Serial.begin(9600);
-  TimerInit();
+  TimerInit(onTimerTick);
   MoistureSensorInit();
+  ledHandler.Set();
+  sei();
 }
 
 void loop() {
@@ -29,16 +33,32 @@ void loop() {
     ticks--;
     sei();
 
-    if (++ledTimer >= BLINK_FREQUENCY) {
-      ledTimer = 0;
+    if (++cycleTimer >= CYCLE_FREQUENCY) {
+      cycleTimer = 0;
+
+      switch (state) {
+        case IDLE:
+          currentLED = RED_LED_MASK;
+          state = CHECK;
+          break;
+        case CHECK:
+          currentLED = GREEN_LED_MASK;
+          moistureValue = MoistureSensorRead();
+
+          if (moistureValue > DRY_THRESHOLD)
+            state = WATERING;
+          else
+            state = IDLE;
+          break;
+        case WATERING:
+          currentLED = BLUE_LED_MASK;
+          state = IDLE;
+          break;
+      }
 
       ledHandler.Clear();
-      ledHandler.Set_Mask(leds[ledToggle]);
+      ledHandler.SetMask(currentLED);
       ledHandler.Set();
-      
-      ledToggle = (ledToggle + 1) % NUM_LEDs;
-
-      Serial.println(MoistureSensorRead());
     }
   }
 }
