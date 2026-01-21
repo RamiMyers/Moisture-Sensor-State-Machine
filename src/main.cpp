@@ -1,14 +1,17 @@
-#include <timer.h>
+#include <Timer.h>
 #include <LED.h>
+#include <MoistureSensor.h>
 
 #define BLINK_FREQUENCY 1000
-
-// TODO: Dependency injection for LEDs
-// TODO: ADC for moisture sensor
+#define NUM_LEDs 3
 
 volatile uint16_t ticks = 0;
 
+uint8_t ledToggle = 0;
 uint16_t ledTimer = 0;
+uint8_t leds[] = { RED_LED_MASK, GREEN_LED_MASK, BLUE_LED_MASK };
+
+LED ledHandler(RED_LED_MASK);
 
 ISR(TIMER0_COMPA_vect) {
   ticks++;
@@ -16,8 +19,8 @@ ISR(TIMER0_COMPA_vect) {
 
 void setup() {
   Serial.begin(9600);
-  timerInit();
-  LED_Init();
+  TimerInit();
+  MoistureSensorInit();
 }
 
 void loop() {
@@ -28,7 +31,14 @@ void loop() {
 
     if (++ledTimer >= BLINK_FREQUENCY) {
       ledTimer = 0;
-      LED_Toggle();
+
+      ledHandler.Clear();
+      ledHandler.Set_Mask(leds[ledToggle]);
+      ledHandler.Set();
+      
+      ledToggle = (ledToggle + 1) % NUM_LEDs;
+
+      Serial.println(MoistureSensorRead());
     }
   }
 }
