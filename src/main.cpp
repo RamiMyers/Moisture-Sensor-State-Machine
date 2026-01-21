@@ -20,7 +20,6 @@ State state = IDLE;
 void onTimerTick() { ticks++; }
 
 void setup() {
-  Serial.begin(9600);
   TimerInit(onTimerTick);
   MoistureSensorInit();
   ledHandler.Set();
